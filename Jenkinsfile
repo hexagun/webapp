@@ -11,6 +11,8 @@ pipeline {
       steps {
         // Output will be something like "go version go1.22 darwin/arm64"
         sh 'go version'
+        sh 'go mod download'
+        sh 'go build -o server'
       }
     }
   }
