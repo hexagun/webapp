@@ -40,5 +40,52 @@ pipeline {
                 }                
             }
         }
+        stage('Build and Push Image') {
+            agent {
+                kubernetes {
+                  yaml '''
+                    apiVersion: v1
+                    kind: Pod
+                    metadata:
+                        labels:
+                        some-label: some-label-value
+                    spec:
+                        containers:
+                        - name: kaniko
+                          image: gcr.io/kaniko-project/executor:debug
+                          imagePullPolicy: Always
+                          command:
+                          - cat
+                          tty: true
+                          volumeMounts:      
+                            - name: kaniko-secret
+                              mountPath: /kaniko/.docker
+                        volumes:
+                        - name: kaniko-secret
+                          secret:
+                            secretName: kaniko-secret
+                    '''
+                }
+            }
+            steps {
+                container('kaniko') {
+                    script {
+                        if (env.BRANCH_NAME == 'main') {
+                            sh '''
+                            /kaniko/executor --dockerfile `pwd`/Dockerfile      \
+                                            --context `pwd`                    \
+                                            --destination "${REPOSITORY_TAG}" 
+                            '''
+                        } else {
+                            sh '''
+                            /kaniko/executor --dockerfile `pwd`/Dockerfile      \
+                                            --context `pwd`                    \
+                                            --no-push 
+                            '''
+                        }
+                    }
+                }
+            }
+        }    
     }
 }
