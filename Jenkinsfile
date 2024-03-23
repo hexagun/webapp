@@ -40,5 +40,37 @@ pipeline {
                 }                
             }
         }
+        stage('Build and Push Image') {
+            agent {
+                kubernetes {
+                  yaml '''
+                    apiVersion: v1
+                    kind: Pod
+                    metadata:
+                        labels:
+                        some-label: some-label-value
+                    spec:
+                        containers:
+                        - name: kaniko
+                          image: gcr.io/kaniko-project/executor:debug
+                          imagePullPolicy: Always
+                          command:
+                          - cat
+                          tty: true                       
+                    '''
+                }
+            }
+            steps {
+                container('kaniko') {
+                    script {
+                        sh '''
+                        /kaniko/executor --dockerfile `pwd`/Dockerfile \
+                                         --context `pwd`               \
+                                         --no-push 
+                        '''
+                    }
+                }
+            }
+        }    
     }
 }
