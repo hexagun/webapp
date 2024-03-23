@@ -1,19 +1,44 @@
 pipeline {
-  // Run on an agent where we want to use Go
-  agent any
+    agent any
 
-  // Ensure the desired Go version is installed for all stages,
-  // using the name defined in the Global Tool Configuration
-  tools { go '1.22.0' }
-
-  stages {
-    stage('Build') {
-      steps {
-        // Output will be something like "go version go1.22 darwin/arm64"
-        sh 'go version'
-        sh 'go mod download'
-        sh 'go build -o server'
-      }
+    environment {
+        // You must set the following environment variables
+        // ORGANIZATION_NAME
+        YOUR_DOCKERHUB_USERNAME = "morettimathieu"
+        
+        SERVICE_NAME = "hexagun"
+        REPOSITORY_TAG="${YOUR_DOCKERHUB_USERNAME}/${SERVICE_NAME}:${BUILD_ID}"
     }
-  }
+
+    stages {
+        stage('Build') {
+            agent {
+                kubernetes {
+                  yaml '''
+                    apiVersion: v1
+                    kind: Pod
+                    metadata:
+                        labels:
+                        some-label: some-label-value
+                    spec:
+                        containers:
+                        - name: go-builder
+                          image: golang:1.22
+                          command:
+                          - cat
+                          tty: true                       
+                    '''
+                }
+            }
+            steps {   
+                container('go-builder') {
+                    // Output will be something like "go version go1.22 darwin/arm64"
+                    sh 'go version'
+                    sh 'go env -w GOFLAGS="-buildvcs=false"'
+                    sh 'go mod download'
+                    sh 'go build -o server'
+                }                
+            }
+        }
+    }
 }
