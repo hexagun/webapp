@@ -71,9 +71,9 @@ pipeline {
                 container('kaniko') {
                     script {
                         sh '''
-                        /kaniko/executor --dockerfile `pwd`/Dockerfile \
-                                         --context `pwd`               \
-                                         --no-push 
+                        /kaniko/executor --dockerfile `pwd`/Dockerfile      \
+                                         --context `pwd`                    \
+                                         --destination "${REPOSITORY_TAG}" 
                         '''
                     }
                 }
