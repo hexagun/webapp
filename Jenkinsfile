@@ -70,11 +70,19 @@ pipeline {
             steps {
                 container('kaniko') {
                     script {
-                        sh '''
-                        /kaniko/executor --dockerfile `pwd`/Dockerfile      \
-                                         --context `pwd`                    \
-                                         --destination "${REPOSITORY_TAG}" 
-                        '''
+                        if (env.BRANCH_NAME == 'main') {
+                            sh '''
+                            /kaniko/executor --dockerfile `pwd`/Dockerfile      \
+                                            --context `pwd`                    \
+                                            --destination "${REPOSITORY_TAG}" 
+                            '''
+                        } else {
+                            sh '''
+                            /kaniko/executor --dockerfile `pwd`/Dockerfile      \
+                                            --context `pwd`                    \
+                                            --no-push 
+                            '''
+                        }
                     }
                 }
             }
