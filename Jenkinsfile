@@ -7,10 +7,40 @@ pipeline {
         YOUR_DOCKERHUB_USERNAME = "morettimathieu"
         
         SERVICE_NAME = "hexagun"
-        REPOSITORY_TAG="${YOUR_DOCKERHUB_USERNAME}/${SERVICE_NAME}:${BUILD_ID}"
+        DOCKER_REPOSITORY = "${YOUR_DOCKERHUB_USERNAME}/${SERVICE_NAME}"
+        PROD_REPOSITORY_TAG = "${DOCKER_REPOSITORY}:${BUILD_ID}-prod"
     }
-
     stages {
+        stage('Checkout and Versioning') {
+            options { skipDefaultCheckout(true)}
+            steps {
+                echo "**** scm.branches is ${scm.branches} ****"
+                checkout(
+                  [ $class: 'GitSCM',
+                    branches: scm.branches, // Assumes the multibranch pipeline checkout branch definition is sufficient
+                    // extensions: [
+                    //   [ $class: 'CloneOption', shallow: true, depth: 1, honorRefspec: true, noTags: true, reference: '/var/lib/git/mwaite/bugs/jenkins-bugs.git'],
+                    //   [ $class: 'LocalBranch', localBranch: env.BRANCH_NAME ],
+                    //   [ $class: 'PruneStaleBranch' ]
+                    // ],
+                    // Add honor refspec and reference repo for speed and space improvement
+                    gitTool: scm.gitTool,
+                    // Default is missing narrow refspec
+                    userRemoteConfigs: [ [ url: scm.userRemoteConfigs[0].url ] ]
+                    // userRemoteConfigs: scm.userRemoteConfigs // Assumes the multibranch pipeline checkout remoteconfig is sufficient
+                  ]
+                )
+                script{
+                    dev_repository_tag=""
+                }
+                sh '''
+                    ls -la
+                    git status
+                    VERSION=$(git describe --tags --abbrev=8)
+                    dev_repository_tag="${DOCKER_REPOSITORY}:${VERSION%%-*}-${VERSION##*-}"
+                '''
+            }
+        }     
         stage('Build') {
             agent {
                 kubernetes {
@@ -33,6 +63,7 @@ pipeline {
             steps {   
                 container('go-builder') {
                     // Output will be something like "go version go1.22 darwin/arm64"
+                    sh 'ls -la'
                     sh 'go version'
                     sh 'go env -w GOFLAGS="-buildvcs=false"'
                     sh 'go mod download'
@@ -74,7 +105,13 @@ pipeline {
                             sh '''
                             /kaniko/executor --dockerfile `pwd`/Dockerfile      \
                                             --context `pwd`                    \
-                                            --destination "${REPOSITORY_TAG}" 
+                                            --destination "${PROD_REPOSITORY_TAG}" 
+                            '''
+                        } else if (env.BRANCH_NAME =~ /^dev.*/ ) {
+                            sh '''
+                            /kaniko/executor --dockerfile `pwd`/Dockerfile      \
+                                            --context `pwd`                    \
+                                            --destination "${dev_repository_tag}" 
                             '''
                         } else {
                             sh '''
