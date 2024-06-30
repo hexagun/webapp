@@ -1,3 +1,5 @@
+def dev_repository_tag=""
+
 pipeline {
     agent any
 
@@ -29,16 +31,16 @@ pipeline {
                     userRemoteConfigs: [ [ url: scm.userRemoteConfigs[0].url ] ]
                     // userRemoteConfigs: scm.userRemoteConfigs // Assumes the multibranch pipeline checkout remoteconfig is sufficient
                   ]
-                )
+                )                
                 script{
-                    dev_repository_tag=""
+
+                    dev_repository_tag = sh (
+                            script: 'VERSION=$(git describe --tags --abbrev=8); NEW_VERSION="${DOCKER_REPOSITORY}:${VERSION%%-*}-${VERSION##*-}"; echo $NEW_VERSION ',
+                            returnStdout: true
+                        ).trim()
+                        
+                    echo dev_repository_tag
                 }
-                sh '''
-                    ls -la
-                    git status
-                    VERSION=$(git describe --tags --abbrev=8)
-                    dev_repository_tag="${DOCKER_REPOSITORY}:${VERSION%%-*}-${VERSION##*-}"
-                '''
             }
         }     
         stage('Build') {
@@ -62,6 +64,7 @@ pipeline {
             }
             steps {   
                 container('go-builder') {
+
                     // Output will be something like "go version go1.22 darwin/arm64"
                     sh 'ls -la'
                     sh 'go version'
@@ -108,17 +111,18 @@ pipeline {
                                             --destination "${PROD_REPOSITORY_TAG}" 
                             '''
                         } else if (env.BRANCH_NAME =~ /^dev.*/ ) {
-                            sh '''
+                            echo dev_repository_tag
+                            sh """
                             /kaniko/executor --dockerfile `pwd`/Dockerfile      \
-                                            --context `pwd`                    \
-                                            --destination "${dev_repository_tag}" 
-                            '''
+                                            --context `pwd`                     \
+                                            --destination "$dev_repository_tag" 
+                            """
                         } else {
-                            sh '''
+                            sh """
                             /kaniko/executor --dockerfile `pwd`/Dockerfile      \
-                                            --context `pwd`                    \
+                                            --context `pwd`                     \
                                             --no-push 
-                            '''
+                            """
                         }
                     }
                 }
