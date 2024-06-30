@@ -33,14 +33,11 @@ pipeline {
                   ]
                 )
                 script{
-                    dev_repository_tag=""
-                }
-                sh '''
                     ls -la
                     git status
                     VERSION=$(git describe --tags --abbrev=8)
                     dev_repository_tag="${DOCKER_REPOSITORY}:${VERSION%%-*}-${VERSION##*-}"
-                '''
+                }
             }
         }     
         stage('Build') {
@@ -111,10 +108,11 @@ pipeline {
                                             --destination "${PROD_REPOSITORY_TAG}" 
                             '''
                         } else if (env.BRANCH_NAME =~ /^dev.*/ ) {
+                            echo dev_repository_tag
                             sh '''
                             /kaniko/executor --dockerfile `pwd`/Dockerfile      \
                                             --context `pwd`                    \
-                                            --destination "${dev_repository_tag}" 
+                                            --destination dev_repository_tag 
                             '''
                         } else {
                             sh '''
