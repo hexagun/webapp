@@ -31,14 +31,14 @@ pipeline {
                     userRemoteConfigs: [ [ url: scm.userRemoteConfigs[0].url ] ]
                     // userRemoteConfigs: scm.userRemoteConfigs // Assumes the multibranch pipeline checkout remoteconfig is sufficient
                   ]
-                )
-                sh '''
+                )                
+                script{
+                    sh '''
                     ls -la
                     git status
                     VERSION=$(git describe --tags --abbrev=8)
                     dev_repository_tag="${DOCKER_REPOSITORY}:${VERSION%%-*}-${VERSION##*-}"
                 '''
-                script{
                     echo dev_repository_tag
                 }
             }
