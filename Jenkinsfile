@@ -1,3 +1,5 @@
+def dev_repository_tag=""
+
 pipeline {
     agent any
 
@@ -62,6 +64,7 @@ pipeline {
             }
             steps {   
                 container('go-builder') {
+
                     // Output will be something like "go version go1.22 darwin/arm64"
                     sh 'ls -la'
                     sh 'go version'
