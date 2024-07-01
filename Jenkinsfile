@@ -112,11 +112,11 @@ pipeline {
                             '''
                         } else if (env.BRANCH_NAME =~ /^dev.*/ ) {
                             echo dev_repository_tag
-                            sh '''
+                            sh "
                             /kaniko/executor --dockerfile `pwd`/Dockerfile      \
                                             --context `pwd`                     \
                                             --destination "$dev_repository_tag" 
-                            '''
+                            "
                         } else {
                             sh '''
                             /kaniko/executor --dockerfile `pwd`/Dockerfile      \
