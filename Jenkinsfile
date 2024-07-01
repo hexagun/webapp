@@ -33,12 +33,13 @@ pipeline {
                   ]
                 )                
                 script{
-                    sh '''
-                    ls -la
-                    git status
-                    VERSION=$(git describe --tags --abbrev=8)
-                    dev_repository_tag="${DOCKER_REPOSITORY}:${VERSION%%-*}-${VERSION##*-}"
-                '''
+
+                    dev_repository_tag = sh (
+                            script: 'VERSION=$(git describe --tags --abbrev=8); NEW_VERSION="${DOCKER_REPOSITORY}:${VERSION%%-*}-${VERSION##*-}"; echo $NEW_VERSION ',
+                            returnStdout: true
+                        ).trim()
+                        echo "Git committer email: ${dev_repository_tag}"
+
                     echo dev_repository_tag
                 }
             }
