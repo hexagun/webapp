@@ -38,8 +38,7 @@ pipeline {
                             script: 'VERSION=$(git describe --tags --abbrev=8); NEW_VERSION="${DOCKER_REPOSITORY}:${VERSION%%-*}-${VERSION##*-}"; echo $NEW_VERSION ',
                             returnStdout: true
                         ).trim()
-                        echo "Git committer email: ${dev_repository_tag}"
-
+                        
                     echo dev_repository_tag
                 }
             }
@@ -112,15 +111,16 @@ pipeline {
                                             --destination "${PROD_REPOSITORY_TAG}" 
                             '''
                         } else if (env.BRANCH_NAME =~ /^dev.*/ ) {
+                            echo dev_repository_tag
                             sh '''
                             /kaniko/executor --dockerfile `pwd`/Dockerfile      \
-                                            --context `pwd`                    \
-                                            --destination "${dev_repository_tag}" 
+                                            --context `pwd`                     \
+                                            --destination "$dev_repository_tag" 
                             '''
                         } else {
                             sh '''
                             /kaniko/executor --dockerfile `pwd`/Dockerfile      \
-                                            --context `pwd`                    \
+                                            --context `pwd`                     \
                                             --no-push 
                             '''
                         }
