@@ -3,11 +3,18 @@ package main
 import (
 	"fmt"
 	"html"
-	"log"
 	"net/http"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
+
+func initLogging() {
+	// UNIX Time is faster and smaller than most timestamps
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	log.Logger = log.With().Caller().Logger()
+}
 
 func setConfig() {
 	viper.SetConfigName("config")  // name of config file (without extension)
@@ -18,24 +25,35 @@ func setConfig() {
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			// Config file not found; ignore error if desired
+			log.Error().Msg(fmt.Sprintf("fatal error config file: %w", err))
 		} else {
 			// Config file was found but another error was produced
+			log.Error().Msg(fmt.Sprintf("fatal error config file: %w", err))
 		}
 	}
 
 	viper.SetDefault("webapp.port", 8888)
+	log.Info().Msg("configs:")
+	log.Info().Msg(fmt.Sprintf("%s%s", "environment:", viper.GetInt("environment")))
+	log.Info().Msg(fmt.Sprintf("%s%d", "webapp.port:", viper.GetInt("webapp.port")))
 }
 
 func main() {
+	initLogging()
+
 	setConfig()
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
+		log.Info().Msg("route /")
 	})
 
 	http.HandleFunc("/hi", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hi")
+		log.Info().Msg("route hi")
 	})
 
 	port := fmt.Sprintf("%s%d", ":", viper.GetInt("webapp.port"))
-	log.Fatal(http.ListenAndServe(port, nil))
+	log.Info().Msg("init server.")
+	log.Fatal().Err(http.ListenAndServe(port, nil))
+	log.Info().Msg("shutting out server.")
 }
