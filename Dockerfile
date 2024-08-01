@@ -1,6 +1,14 @@
-FROM golang:1.22-alpine
+# Stage 1: Build React app
+FROM node:22-alpine as npm-builder
 
-RUN mkdir /app
+WORKDIR /app
+COPY ./frontend .
+RUN npm install
+RUN npm run build
+
+# Stage 2: Build Go server
+FROM golang:1.22-alpine as go-builder
+
 WORKDIR /app
 
 ADD server.go /app/
@@ -10,4 +18,12 @@ ADD go.sum /app/
 RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -o /main
 RUN ls -l
+
+# Stage 3: Run the Go server
+FROM alpine:latest
+
+WORKDIR /app
+COPY --from=npm-builder /app/dist /app/frontend/dist
+COPY --from=go-builder /app/main /app/main
+
 CMD ["/main"]
