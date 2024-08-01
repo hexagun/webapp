@@ -20,6 +20,15 @@ pipeline {
                 checkout(
                   [ $class: 'GitSCM',
                     branches: scm.branches, // Assumes the multibranch pipeline checkout branch definition is sufficient
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [[$class: 'SubmoduleOption',
+                        disableSubmodules: false,
+                        parentCredentials: false,
+                        recursiveSubmodules: true,
+                        reference: '',
+                        trackingSubmodules: false]], 
+                    submoduleCfg: [], 
+                    
                     // extensions: [
                     //   [ $class: 'CloneOption', shallow: true, depth: 1, honorRefspec: true, noTags: true, reference: '/var/lib/git/mwaite/bugs/jenkins-bugs.git'],
                     //   [ $class: 'LocalBranch', localBranch: env.BRANCH_NAME ],
@@ -37,8 +46,7 @@ pipeline {
                     dev_repository_tag = sh (
                             script: 'VERSION=$(git describe --tags --abbrev=8); NEW_VERSION="${DOCKER_REPOSITORY}:${VERSION%%-*}-${VERSION##*-}"; echo $NEW_VERSION ',
                             returnStdout: true
-                        ).trim()
-                        
+                        ).trim()                    
                     echo dev_repository_tag
                 }
             }
