@@ -67,6 +67,7 @@ pipeline {
 
                     // Output will be something like "go version go1.22 darwin/arm64"
                     sh 'ls -la'
+                    sh 'ls -la ./frontend'
                     sh 'go version'
                     sh 'go env -w GOFLAGS="-buildvcs=false"'
                     sh 'go mod download'
