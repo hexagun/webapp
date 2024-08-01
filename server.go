@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"html"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -38,19 +39,34 @@ func setConfig() {
 	log.Info().Msg(fmt.Sprintf("%s%d", "webapp.port:", viper.GetInt("webapp.port")))
 }
 
+func ServeReactApp(w http.ResponseWriter, r *http.Request) {
+	log.Info().Msg("route /")
+	// Get the absolute path to the dist directory
+	absPath, err := filepath.Abs("frontend/dist")
+	if err != nil {
+		http.Error(w, "Could not find dist directory", http.StatusInternalServerError)
+		return
+	}
+
+	// Serve the file based on URL path
+	path := filepath.Join(absPath, r.URL.Path)
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		// If file doesn't exist, serve index.html for client-side routing
+		http.ServeFile(w, r, filepath.Join(absPath, "index.html"))
+		return
+	}
+
+	// Serve the static file
+	http.FileServer(http.Dir(absPath)).ServeHTTP(w, r)
+}
+
 func main() {
 	initLogging()
 
 	setConfig()
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
-		log.Info().Msg("route /")
-	})
 
-	http.HandleFunc("/hi", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hi")
-		log.Info().Msg("route hi")
-	})
+	// Serve static files from the dist directory
+	http.HandleFunc("/", ServeReactApp)
 
 	port := fmt.Sprintf("%s%d", ":", viper.GetInt("webapp.port"))
 	log.Info().Msg("init server.")
