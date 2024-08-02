@@ -5,6 +5,8 @@ WORKDIR /app
 COPY ./frontend .
 RUN npm install
 RUN npm run build
+RUN ls -l
+RUN ls -l ./dist
 
 # Stage 2: Build Go server
 FROM golang:1.22-alpine as go-builder
