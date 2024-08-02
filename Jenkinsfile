@@ -110,7 +110,32 @@ pipeline {
                     '''
                 }
             }
+            options { skipDefaultCheckout(true)}
             steps {
+                checkout(
+                  [ $class: 'GitSCM',
+                    branches: scm.branches, // Assumes the multibranch pipeline checkout branch definition is sufficient
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [[$class: 'SubmoduleOption',
+                        disableSubmodules: false,
+                        parentCredentials: false,
+                        recursiveSubmodules: true,
+                        reference: '',
+                        trackingSubmodules: false]], 
+                    submoduleCfg: [], 
+                    
+                    // extensions: [
+                    //   [ $class: 'CloneOption', shallow: true, depth: 1, honorRefspec: true, noTags: true, reference: '/var/lib/git/mwaite/bugs/jenkins-bugs.git'],
+                    //   [ $class: 'LocalBranch', localBranch: env.BRANCH_NAME ],
+                    //   [ $class: 'PruneStaleBranch' ]
+                    // ],
+                    // Add honor refspec and reference repo for speed and space improvement
+                    gitTool: scm.gitTool,
+                    // Default is missing narrow refspec
+                    userRemoteConfigs: [ [ url: scm.userRemoteConfigs[0].url ] ]
+                    // userRemoteConfigs: scm.userRemoteConfigs // Assumes the multibranch pipeline checkout remoteconfig is sufficient
+                  ]
+                )                
                 container('kaniko') {
                     script {
                         if (env.BRANCH_NAME == 'main') {
