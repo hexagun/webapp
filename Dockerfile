@@ -25,6 +25,7 @@ RUN ls -l
 FROM alpine:latest
 
 WORKDIR /app
+RUN mkdir /frontend
 COPY --from=npm-builder /app/dist /app/frontend/dist
 COPY --from=go-builder /app/main /app/main
 
