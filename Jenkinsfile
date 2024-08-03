@@ -19,7 +19,7 @@ pipeline {
                 echo "**** scm.branches is ${scm.branches} ****"
                 checkout(
                   [ $class: 'GitSCM',
-                    branches: scm.branches, // Assumes the multibranch pipeline checkout branch definition is sufficient
+                    branches: scm.branches, // Assumes the multibranch pipeline checkout branch definition is sufficient                    
                     // extensions: [
                     //   [ $class: 'CloneOption', shallow: true, depth: 1, honorRefspec: true, noTags: true, reference: '/var/lib/git/mwaite/bugs/jenkins-bugs.git'],
                     //   [ $class: 'LocalBranch', localBranch: env.BRANCH_NAME ],
@@ -37,8 +37,7 @@ pipeline {
                     dev_repository_tag = sh (
                             script: 'VERSION=$(git describe --tags --abbrev=8); NEW_VERSION="${DOCKER_REPOSITORY}:${VERSION%%-*}-${VERSION##*-}"; echo $NEW_VERSION ',
                             returnStdout: true
-                        ).trim()
-                        
+                        ).trim()                    
                     echo dev_repository_tag
                 }
             }
@@ -67,6 +66,7 @@ pipeline {
 
                     // Output will be something like "go version go1.22 darwin/arm64"
                     sh 'ls -la'
+                    sh 'ls -la ./frontend'
                     sh 'go version'
                     sh 'go env -w GOFLAGS="-buildvcs=false"'
                     sh 'go mod download'
@@ -101,7 +101,32 @@ pipeline {
                     '''
                 }
             }
+            options { skipDefaultCheckout(true)}
             steps {
+                checkout(
+                  [ $class: 'GitSCM',
+                    branches: scm.branches, // Assumes the multibranch pipeline checkout branch definition is sufficient
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [[$class: 'SubmoduleOption',
+                        disableSubmodules: false,
+                        parentCredentials: false,
+                        recursiveSubmodules: true,
+                        reference: '',
+                        trackingSubmodules: false]], 
+                    submoduleCfg: [], 
+                    
+                    // extensions: [
+                    //   [ $class: 'CloneOption', shallow: true, depth: 1, honorRefspec: true, noTags: true, reference: '/var/lib/git/mwaite/bugs/jenkins-bugs.git'],
+                    //   [ $class: 'LocalBranch', localBranch: env.BRANCH_NAME ],
+                    //   [ $class: 'PruneStaleBranch' ]
+                    // ],
+                    // Add honor refspec and reference repo for speed and space improvement
+                    gitTool: scm.gitTool,
+                    // Default is missing narrow refspec
+                    userRemoteConfigs: [ [ url: scm.userRemoteConfigs[0].url ] ]
+                    // userRemoteConfigs: scm.userRemoteConfigs // Assumes the multibranch pipeline checkout remoteconfig is sufficient
+                  ]
+                )                
                 container('kaniko') {
                     script {
                         if (env.BRANCH_NAME == 'main') {
