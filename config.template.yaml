@@ -1,0 +1,3 @@
+environment: "${ENVIRONMENT}"
+webapp:
+  port: ${WEBAPP_PORT}

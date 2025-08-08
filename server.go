@@ -34,8 +34,9 @@ func setConfig() {
 	}
 
 	viper.SetDefault("webapp.port", 8888)
+	viper.SetDefault("environment", "default")
 	log.Info().Msg("configs:")
-	log.Info().Msg(fmt.Sprintf("%s%s", "environment:", viper.GetInt("environment")))
+	log.Info().Msg(fmt.Sprintf("%s%s", "environment:", viper.GetString("environment")))
 	log.Info().Msg(fmt.Sprintf("%s%d", "webapp.port:", viper.GetInt("webapp.port")))
 }
 
@@ -58,6 +59,7 @@ func ServeReactApp(w http.ResponseWriter, r *http.Request) {
 
 	// Serve the static file
 	http.FileServer(http.Dir(absPath)).ServeHTTP(w, r)
+
 }
 
 func main() {
@@ -66,7 +68,7 @@ func main() {
 	setConfig()
 
 	// Serve static files from the dist directory
-	http.HandleFunc("/", ServeReactApp)
+	http.HandleFunc("/*", ServeReactApp)
 
 	port := fmt.Sprintf("%s%d", ":", viper.GetInt("webapp.port"))
 	log.Info().Msg("init server.")
